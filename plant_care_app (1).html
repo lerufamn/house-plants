@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 Plant Care Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment: #f4efe6;
+  --card: #ffffff;
+  --green-deep: #2a4a2a;
+  --green-mid: #3d6b3d;
+  --green-light: #a8c5a0;
+  --green-pale: #eef5ea;
+  --amber: #8b5e3c;
+  --amber-light: #fdf3dc;
+  --text-dark: #1c2e1c;
+  --text-mid: #4a5c4a;
+  --text-light: #7a8c7a;
+  --rule: #d4e4d0;
+  --shadow: rgba(42,74,42,0.10);
+  --fresh: #d4edda; --fresh-text: #155724;
+  --check: #fff3cd; --check-text: #856404;
+  --overdue: #f8d7da; --overdue-text: #721c24;
+  --unknown: #e2e3e5; --unknown-text: #495057;
+  --w-distilled: #dbeafe; --w-distilled-text: #1e40af;
+  --w-tap24: #dcfce7; --w-tap24-text: #166534;
+  --w-tap: #f3f4f6; --w-tap-text: #374151;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Crimson Text', Georgia, serif;
+  background: var(--parchment);
+  color: var(--text-dark);
+  font-size: 16px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.app-header {
+  background: var(--green-deep);
+  color: white;
+  padding: 1.2rem 1.5rem 0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem;
+}
+.app-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem; font-weight: 700; letter-spacing: .04em;
+}
+.monday-info {
+  font-family: 'Lato', sans-serif; font-size: .8rem;
+  opacity: .8; text-align: right; line-height: 1.4;
+}
+.monday-date { font-weight: 700; font-size: .9rem; opacity: 1; }
+.tab-nav {
+  display: flex; gap: 0; border-bottom: none;
+}
+.tab-btn {
+  font-family: 'Lato', sans-serif; font-size: .8rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  background: transparent; border: none; color: rgba(255,255,255,.6);
+  padding: .6rem 1.2rem; cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all .2s;
+}
+.tab-btn.active { color: white; border-bottom-color: var(--green-light); }
+.tab-btn:hover:not(.active) { color: rgba(255,255,255,.85); }
+
+/* ── Layout ── */
+.app-body { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+/* ── Alerts ── */
+.alert {
+  border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem;
+  font-size: .9rem; display: flex; gap: .6rem; align-items: flex-start;
+  border-left: 4px solid;
+}
+.alert-warning { background: #fff3cd; border-color: #ffc107; color: #664d03; }
+.alert-info    { background: #dbeafe; border-color: #3b82f6; color: #1e3a8a; }
+.alert-action  { background: #fce7f3; border-color: #ec4899; color: #831843; }
+.alert-success { background: var(--green-pale); border-color: var(--green-mid); color: var(--green-deep); }
+.alert-tap     { background: var(--amber-light); border-color: var(--amber); color: #5c3d1e; }
+
+/* ── Section headers ── */
+.section-header {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem; font-weight: 700; color: var(--green-deep);
+  margin: 1.5rem 0 .75rem;
+  padding-bottom: .4rem;
+  border-bottom: 2px solid var(--green-light);
+  display: flex; align-items: center; gap: .5rem;
+}
+.section-count {
+  font-family: 'Lato', sans-serif; font-size: .75rem; font-weight: 400;
+  color: var(--text-light); margin-left: auto;
+}
+
+/* ── Plant cards (task view) ── */
+.plant-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: .75rem 1rem;
+  margin-bottom: .5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: .75rem;
+  align-items: center;
+  transition: background .15s, opacity .2s;
+  cursor: pointer;
+}
+.plant-card:hover { background: var(--green-pale); }
+.plant-card.done {
+  opacity: .55;
+  background: #f8f8f6;
+}
+.plant-card.done .card-name { text-decoration: line-through; color: var(--text-light); }
+
+.plant-checkbox {
+  width: 22px; height: 22px;
+  border: 2px solid var(--green-mid);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 13px; color: white;
+  background: transparent; transition: all .15s;
+}
+.plant-card.done .plant-checkbox {
+  background: var(--green-mid); border-color: var(--green-mid);
+}
+
+.card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: .95rem; font-weight: 700; color: var(--text-dark);
+}
+.card-sci {
+  font-family: 'Crimson Text', serif;
+  font-style: italic; font-size: .8rem; color: var(--text-light);
+}
+.card-note {
+  font-size: .82rem; color: var(--text-mid);
+  margin-top: .2rem; line-height: 1.4;
+}
+.card-badges {
+  display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem;
+}
+.badge {
+  font-family: 'Lato', sans-serif; font-size: .65rem; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: .15rem .45rem; border-radius: 99px;
+}
+.badge-distilled { background: var(--w-distilled); color: var(--w-distilled-text); }
+.badge-tap24     { background: var(--w-tap24);     color: var(--w-tap24-text); }
+.badge-tap       { background: var(--w-tap);       color: var(--w-tap-text); }
+
+.card-right { text-align: right; flex-shrink: 0; }
+.days-badge {
+  font-family: 'Lato', sans-serif; font-size: .7rem; font-weight: 700;
+  padding: .2rem .5rem; border-radius: 6px; white-space: nowrap;
+  display: inline-block;
+}
+.days-fresh   { background: var(--fresh);   color: var(--fresh-text); }
+.days-check   { background: var(--check);   color: var(--check-text); }
+.days-overdue { background: var(--overdue); color: var(--overdue-text); }
+.days-unknown { background: var(--unknown); color: var(--unknown-text); }
+.card-num {
+  font-family: 'Lato', sans-serif; font-size: .7rem; color: var(--text-light);
+  margin-top: .25rem;
+}
+
+/* ── No-tier2 notice ── */
+.tier2-notice {
+  background: white; border: 1px dashed var(--rule);
+  border-radius: 8px; padding: 1rem;
+  text-align: center; color: var(--text-light);
+  font-family: 'Lato', sans-serif; font-size: .85rem;
+  margin-bottom: .5rem;
+}
+
+/* ── Other tasks ── */
+.other-tasks {
+  background: white; border: 1px solid var(--rule);
+  border-radius: 8px; padding: 1rem 1.2rem;
+}
+.task-item {
+  font-size: .9rem; padding: .4rem 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--text-mid);
+  display: flex; gap: .5rem; align-items: flex-start;
+}
+.task-item:last-child { border-bottom: none; padding-bottom: 0; }
+.task-item .task-icon { flex-shrink: 0; }
+
+/* ── All plants tab ── */
+.plants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: .75rem;
+}
+.plant-overview-card {
+  background: white; border: 1px solid var(--rule);
+  border-radius: 8px; padding: .9rem 1rem;
+}
+.poc-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: .5rem;
+  margin-bottom: .5rem;
+}
+.poc-name {
+  font-family: 'Playfair Display', serif;
+  font-size: .9rem; font-weight: 700;
+}
+.poc-num {
+  font-family: 'Lato', sans-serif; font-size: .7rem;
+  color: white; background: var(--green-mid);
+  padding: .1rem .4rem; border-radius: 4px;
+  flex-shrink: 0;
+}
+.poc-sci {
+  font-style: italic; font-size: .78rem;
+  color: var(--text-light); margin-bottom: .5rem;
+}
+.poc-meta {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: .5rem;
+  flex-wrap: wrap;
+}
+.poc-date-row {
+  margin-top: .5rem;
+  display: flex; align-items: center; gap: .5rem;
+  font-family: 'Lato', sans-serif; font-size: .75rem;
+  color: var(--text-light);
+}
+.poc-date-row input[type="date"] {
+  border: 1px solid var(--rule); border-radius: 4px;
+  padding: .2rem .4rem; font-size: .75rem;
+  font-family: 'Lato', sans-serif; color: var(--text-dark);
+  background: var(--parchment); cursor: pointer;
+}
+.tier-badge {
+  font-family: 'Lato', sans-serif; font-size: .65rem; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: .15rem .4rem; border-radius: 4px;
+}
+.tier-1 { background: var(--green-pale); color: var(--green-deep); }
+.tier-2 { background: var(--amber-light); color: var(--amber); }
+
+/* ── Progress bar ── */
+.progress-wrap {
+  background: white; border: 1px solid var(--rule);
+  border-radius: 8px; padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.progress-bar-outer {
+  flex: 1; height: 8px; background: var(--rule);
+  border-radius: 99px; overflow: hidden;
+}
+.progress-bar-inner {
+  height: 100%; background: var(--green-mid);
+  border-radius: 99px; transition: width .3s;
+}
+.progress-text {
+  font-family: 'Lato', sans-serif; font-size: .8rem;
+  color: var(--text-mid); white-space: nowrap;
+}
+
+/* ── Empty state ── */
+.all-done {
+  text-align: center; padding: 2.5rem 1rem;
+  color: var(--text-mid);
+}
+.all-done .big-emoji { font-size: 3rem; display: block; margin-bottom: .5rem; }
+.all-done h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: .4rem; color: var(--green-deep); }
+
+/* ── Sort controls ── */
+.sort-controls {
+  display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap;
+  align-items: center;
+}
+.sort-btn {
+  font-family: 'Lato', sans-serif; font-size: .75rem; font-weight: 700;
+  padding: .3rem .75rem; border-radius: 99px; cursor: pointer;
+  border: 1px solid var(--rule); background: white; color: var(--text-mid);
+  transition: all .15s;
+}
+.sort-btn.active { background: var(--green-deep); color: white; border-color: var(--green-deep); }
+.sort-label { font-family: 'Lato', sans-serif; font-size: .75rem; color: var(--text-light); }
+
+/* ── Reset button ── */
+.reset-row { margin-top: 2rem; text-align: center; }
+.reset-btn {
+  font-family: 'Lato', sans-serif; font-size: .75rem;
+  background: none; border: 1px solid #dc3545; color: #dc3545;
+  padding: .35rem .9rem; border-radius: 6px; cursor: pointer;
+  transition: all .15s;
+}
+.reset-btn:hover { background: #dc3545; color: white; }
+
+@media (max-width: 600px) {
+  .plant-card { grid-template-columns: auto 1fr; }
+  .card-right { grid-column: 2; text-align: left; }
+  .plants-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <div class="app-title">🌿 Plant Care</div>
+    <div class="monday-info">
+      <div id="header-today"></div>
+      <div class="monday-date" id="header-monday"></div>
+    </div>
+  </div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('monday')">This Monday</button>
+    <button class="tab-btn" onclick="showTab('all')">All Plants</button>
+  </nav>
+</header>
+
+<div class="app-body">
+  <div id="tab-monday"></div>
+  <div id="tab-all" style="display:none"></div>
+</div>
+
+<script>
+// ─── Plant Data ───────────────────────────────────────────────────────────────
+const PLANTS = [
+  { id:1,  name:'Boston Fern',                     sci:'Nephrolepis exaltata',        tier:1, water:'tap24',    drought:'low',       fertilize:true,  fertNote:null,
+    note:'Keep consistently moist — never fully dry out. Priority for humidifier placement. Clear dead fronds at base.' },
+  { id:2,  name:"Snake Plant 'Laurentii' (Large)",  sci:'Dracaena trifasciata',        tier:2, water:'tap24',    drought:'very-high', fertilize:true,  fertNote:null,
+    note:'Water only when completely dry. Check base of leaves for any softness (overwatering sign). Division only to preserve yellow margins.' },
+  { id:3,  name:'Golden Pothos',                   sci:'Epipremnum aureum',           tier:1, water:'tap',      drought:'medium',    fertilize:true,  fertNote:null,
+    note:'Water when top 1–2 inches dry. Parent plant of #17.' },
+  { id:4,  name:"Snake Plant 'Laurentii' (Small)",  sci:'Dracaena trifasciata',        tier:2, water:'tap24',    drought:'very-high', fertilize:true,  fertNote:null,
+    note:'Moving away from east window. Same care as #2.' },
+  { id:5,  name:"Snake Plant 'Zeylanica'",          sci:'Dracaena trifasciata',        tier:2, water:'tap24',    drought:'very-high', fertilize:true,  fertNote:null,
+    note:'Water only when completely dry. Can propagate from leaf cuttings unlike Laurentii.' },
+  { id:6,  name:'Zebra Haworthia A',               sci:'Haworthiopsis fasciata',      tier:2, water:'tap',      drought:'very-high', fertilize:true,  fertNote:'May and July only — twice per season.',
+    note:'Near north windows. Water every 2–4 weeks when completely dry. Bottom-watering works well.' },
+  { id:7,  name:'Zebra Haworthia B (with pups)',    sci:'Haworthiopsis fasciata',      tier:2, water:'tap',      drought:'very-high', fertilize:true,  fertNote:'May and July only — twice per season.',
+    note:'Check if pups are ready to separate — gently tug to test root development. Remove dead central rosette if crowding pups.' },
+  { id:8,  name:'Unknown Rescue A',                sci:'Species unconfirmed',         tier:2, water:'tap',      drought:'high',      fertilize:false, fertNote:null,
+    note:'Blue glazed bowl. Keep drier until identified. Treat as potentially toxic. Monitor for new growth.' },
+  { id:9,  name:'Unknown Rescue B',                sci:'Species unconfirmed',         tier:1, water:'tap',      drought:'high',      fertilize:false, fertNote:null,
+    note:'Teal pot. Very sparse growth — err toward drier. Bright indirect light. Check for new shoot development every week.' },
+  { id:10, name:'Bromeliad / Guzmania',             sci:'Guzmania lingulata',          tier:1, water:'distilled',drought:'medium',    fertilize:true,  fertNote:'Tiny amount of quarter-strength into the central cup for the pup only. Do not fertilize the soil.',
+    note:'Fill central cup with distilled water. Change cup water every 1–2 weeks. Pup is establishing — keep cup full and be patient.' },
+  { id:11, name:'Snake Plant — Wide-Leaf Variant',  sci:'Dracaena trifasciata',        tier:2, water:'tap24',    drought:'very-high', fertilize:true,  fertNote:null,
+    note:'Water only when completely dry. Division only to preserve yellow margins.' },
+  { id:12, name:'Sweetheart Hoya',                 sci:'Hoya kerrii',                 tier:2, water:'tap',      drought:'high',      fertilize:true,  fertNote:'Use a fertilizer with a higher phosphorus content (middle number on the label).',
+    note:'Allow to dry almost completely. Do NOT remove flowering spurs (peduncles) — they bloom again each year.' },
+  { id:13, name:'Lucky Bamboo',                    sci:'Dracaena sanderiana',         tier:1, water:'distilled',drought:'medium',    fertilize:true,  fertNote:'Quarter strength only — light feeder still adjusting from water to soil.',
+    note:'Recently moved to soil (Jan). Keep more consistently moist for now. Distilled water only — fluoride sensitive. Start fertilizer in May at quarter strength.' },
+  { id:14, name:'Calathea',                        sci:'Calathea sp.',                tier:1, water:'distilled',drought:'low',       fertilize:true,  fertNote:null,
+    note:'Distilled water only — very fluoride sensitive (brown edges = tap water damage). Priority for humidifier placement. Leaves rise at night — normal!' },
+  { id:15, name:'Money Tree',                      sci:'Pachira aquatica',            tier:1, water:'tap',      drought:'medium',    fertilize:true,  fertNote:null,
+    note:'Allow top 2–3 inches to dry before watering. Rotate occasionally for even growth.' },
+  { id:16, name:'Baby Rubber Plant',               sci:'Peperomia obtusifolia',       tier:2, water:'tap',      drought:'high',      fertilize:true,  fertNote:null,
+    note:'Allow top half of soil to dry. Overwatering is the main risk — thick leaves store water.' },
+  { id:17, name:'Golden Pothos (cutting from #3)', sci:'Epipremnum aureum',           tier:1, water:'tap',      drought:'medium',    fertilize:true,  fertNote:null,
+    note:'Keep slightly more moist than #3 until established and actively growing. Then treat identically to #3.' },
+  { id:18, name:'Spider Plant A',                  sci:'Chlorophytum comosum',        tier:1, water:'tap24',    drought:'medium',    fertilize:true,  fertNote:null,
+    note:'Allow top inch to dry. Fleshy roots store water. Repotted Jan — established and growing well.' },
+  { id:19, name:'Spider Plant B',                  sci:'Chlorophytum comosum',        tier:1, water:'tap24',    drought:'medium',    fertilize:true,  fertNote:null,
+    note:'Same care as #18. Dense clump — watch for roots escaping drainage holes; may need repotting in coming months.' },
+  { id:20, name:'Christmas Cactus',                sci:'Schlumbergera sp.',           tier:1, water:'tap24',    drought:'medium',    fertilize:true,  fertNote:null,
+    note:'NOT a desert cactus — water when top inch is dry. Moving away from east window. October: begin rest protocol (cool nights + long darkness) for holiday blooming.' },
+];
+
+// ─── Date Utilities ───────────────────────────────────────────────────────────
+function toDateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+function fromDateStr(s) {
+  const [y, m, day] = s.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+function getThisMonday() {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(today);
+  m.setDate(today.getDate() + diff);
+  m.setHours(0,0,0,0);
+  return m;
+}
+function getNextMonday() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (today.getDay() === 1) return today;
+  const m = getThisMonday();
+  m.setDate(m.getDate() + 7);
+  return m;
+}
+function getISOWeek(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+function isTier2Week(monday) { return getISOWeek(monday) % 2 === 0; }
+function isFirstMondayOfMonth(monday) { return monday.getDate() <= 7; }
+function isToday(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+function daysUntil(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((d - t) / 86400000);
+}
+function getDaysSince(dateStr) {
+  if (!dateStr) return null;
+  const then = fromDateStr(dateStr);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.max(0, Math.floor((now - then) / 86400000));
+}
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+}
+function formatDateShort(d) {
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+// ─── Storage ──────────────────────────────────────────────────────────────────
+const SK = 'plantcare_v2';
+function load() { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch { return {}; } }
+function save(s) { localStorage.setItem(SK, JSON.stringify(s)); }
+
+function getLastWatered(id) { return (load().lastWatered || {})[id] || null; }
+function setLastWatered(id, dateStr) {
+  const s = load(); s.lastWatered = s.lastWatered || {};
+  s.lastWatered[id] = dateStr; save(s);
+}
+function getChecked(mondayStr, id) { return !!((load().checked || {})[mondayStr] || {})[id]; }
+function toggleChecked(mondayStr, id) {
+  const s = load(); s.checked = s.checked || {};
+  s.checked[mondayStr] = s.checked[mondayStr] || {};
+  const nowDone = !s.checked[mondayStr][id];
+  s.checked[mondayStr][id] = nowDone;
+  if (nowDone) { s.lastWatered = s.lastWatered || {}; s.lastWatered[id] = mondayStr; }
+  else { /* uncheck: remove lastWatered only if it matches this monday */ 
+    if ((s.lastWatered || {})[id] === mondayStr) delete s.lastWatered[id]; }
+  save(s);
+  return nowDone;
+}
+function getFertChecked(mondayStr, id) { return !!((load().fert || {})[mondayStr] || {})[id]; }
+function toggleFertChecked(mondayStr, id) {
+  const s = load(); s.fert = s.fert || {};
+  s.fert[mondayStr] = s.fert[mondayStr] || {};
+  s.fert[mondayStr][id] = !s.fert[mondayStr][id]; save(s);
+  return s.fert[mondayStr][id];
+}
+
+// ─── Urgency ──────────────────────────────────────────────────────────────────
+const THRESHOLDS = { low:[5,8], medium:[7,12], high:[10,16], 'very-high':[16,28] };
+function getUrgency(days, drought) {
+  if (days === null) return 'unknown';
+  const [w, u] = THRESHOLDS[drought] || THRESHOLDS.medium;
+  if (days >= u) return 'overdue';
+  if (days >= w) return 'check';
+  return 'fresh';
+}
+function daysBadge(id) {
+  const days = getDaysSince(getLastWatered(id));
+  const p = PLANTS.find(p => p.id === id);
+  const urg = getUrgency(days, p.drought);
+  const cls = 'days-' + urg;
+  const label = days === null ? 'never logged' : days === 0 ? 'today' : `${days}d ago`;
+  return `<span class="days-badge ${cls}">${label}</span>`;
+}
+
+// ─── Water badge ──────────────────────────────────────────────────────────────
+function waterBadge(water) {
+  if (water === 'distilled') return `<span class="badge badge-distilled">💧 Distilled only</span>`;
+  if (water === 'tap24')     return `<span class="badge badge-tap24">🚰 Tap (24h rest)</span>`;
+  return `<span class="badge badge-tap">🚿 Tap water</span>`;
+}
+
+// ─── Fertilizer logic ─────────────────────────────────────────────────────────
+const FERT_MONTHS = [4,5,6,7,8]; // May–Sep
+function isFertDay(monday) {
+  return FERT_MONTHS.includes(monday.getMonth()) && isFirstMondayOfMonth(monday);
+}
+function getFertNote(p, month) {
+  if (!p.fertilize) return null;
+  if ([6,7].includes(p.id) && ![4,6].includes(month)) return null; // haworthias: May+Jul only
+  return p.fertNote || 'Half strength balanced liquid fertilizer.';
+}
+
+// ─── Seasonal alerts ──────────────────────────────────────────────────────────
+function getAlerts(monday) {
+  const m = monday.getMonth(); const alerts = [];
+  if (m === 8 && isFirstMondayOfMonth(monday))
+    alerts.push({type:'warning', text:'🍂 Last fertilizing Monday of the season. Stop all fertilizing after today until next May.'});
+  if (m === 8)
+    alerts.push({type:'info', text:'🎄 Next month: start Christmas Cactus rest protocol — cool nights (50–55°F), 12–14h darkness per night. Stop fertilizing it in September.'});
+  if (m === 9)
+    alerts.push({type:'action', text:'🎄 CHRISTMAS CACTUS (#20): Move to cool spot with cool nights and 12–14h darkness per night. Water minimally. No fertilizer. Maintain 4–6 weeks.'});
+  if (m === 10)
+    alerts.push({type:'info', text:'🎄 Watch Christmas Cactus (#20) for buds. Once buds appear — do not move it again! Return to normal spot and resume watering.'});
+  if (m === 1 && isFirstMondayOfMonth(monday))
+    alerts.push({type:'info', text:'💐 February: Good time to repot Christmas Cactus if needed. Check if Calathea or Pothos need a pot up this spring.'});
+  if (m === 3)
+    alerts.push({type:'success', text:'🌱 Spring! Fertilizing season begins in May. Plants entering active growth — soil may dry faster than in winter.'});
+  return alerts;
+}
+
+// ─── Render: This Monday tab ──────────────────────────────────────────────────
+let currentTab = 'monday';
+let activeSortMode = 'urgency';
+
+function renderMonday() {
+  const monday = getNextMonday();
+  const mondayStr = toDateStr(monday);
+  const isMonday = isToday(monday);
+  const tier2 = isTier2Week(monday);
+  const doFert = isFertDay(monday);
+  const fertMonth = monday.getMonth();
+
+  // Which plants to show, sorted by water type
+  const waterOrder = { distilled:0, tap24:1, tap:2 };
+  const waterPlants = PLANTS
+    .filter(p => p.tier === 1 || (p.tier === 2 && tier2))
+    .sort((a,b) => waterOrder[a.water] - waterOrder[b.water]);
+  const fertPlants = doFert ? waterPlants.filter(p => getFertNote(p, fertMonth) !== null) : [];
+
+  // Progress
+  const total = waterPlants.length;
+  const done = waterPlants.filter(p => getChecked(mondayStr, p.id)).length;
+
+  const alerts = getAlerts(monday);
+  const hasTap24 = waterPlants.some(p => p.water === 'tap24');
+
+  let html = '';
+
+  // Alerts
+  alerts.forEach(a => {
+    html += `<div class="alert alert-${a.type}">${a.text}</div>`;
+  });
+
+  // Tap water prep reminder
+  if (hasTap24 && !isMonday) {
+    html += `<div class="alert alert-tap">🚰 <strong>Prep reminder:</strong> Leave tap water out uncovered tonight so it's ready for Monday watering. Needs 24+ hours to off-gas chlorine.</div>`;
+  }
+
+  // Progress bar
+  if (total > 0) {
+    const pct = Math.round((done / total) * 100);
+    html += `<div class="progress-wrap">
+      <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%"></div></div>
+      <div class="progress-text">${done} / ${total} checked</div>
+    </div>`;
+  }
+
+  if (done === total && total > 0) {
+    html += `<div class="all-done"><span class="big-emoji">🎉</span>
+      <h3>All done for this Monday!</h3>
+      <p>Great work. Check back next Monday.</p></div>`;
+  }
+
+  // Water section
+  html += `<div class="section-header">💧 Water Checks
+    <span class="section-count">${waterPlants.length} plants${tier2 ? ' (Tier 1 + Tier 2)' : ' (Tier 1 only)'}</span></div>`;
+
+  if (!tier2) {
+    const nextTier2Monday = (() => {
+      let m = new Date(monday); m.setDate(m.getDate() + 7);
+      while (!isTier2Week(m)) m.setDate(m.getDate() + 7);
+      return m;
+    })();
+    html += `<div class="tier2-notice">Tier 2 plants not due this week — next Tier 2 Monday: <strong>${formatDateShort(nextTier2Monday)}</strong></div>`;
+  }
+
+  const waterGroupLabels = {
+    distilled: '💧 Distilled water only',
+    tap24:     '🚰 Tap water (left out 24h+)',
+    tap:       '🚿 Regular tap water',
+  };
+  let lastWaterGroup = null;
+  waterPlants.forEach(p => {
+    if (p.water !== lastWaterGroup) {
+      html += `<div style="font-family:'Lato',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-light);margin:${lastWaterGroup ? '1rem' : '.25rem'} 0 .35rem .25rem">${waterGroupLabels[p.water]}</div>`;
+      lastWaterGroup = p.water;
+    }
+    const isDone = getChecked(mondayStr, p.id);
+    html += `<div class="plant-card${isDone ? ' done' : ''}" onclick="toggleWater(${p.id}, '${mondayStr}')">
+      <div class="plant-checkbox">${isDone ? '✓' : ''}</div>
+      <div>
+        <div class="card-name">${p.name}</div>
+        <div class="card-sci">${p.sci}</div>
+        <div class="card-note">${p.note}</div>
+      </div>
+      <div class="card-right">
+        ${daysBadge(p.id)}
+        <div class="card-num">#${p.id}</div>
+      </div>
+    </div>`;
+  });
+
+  // Fertilize section
+  if (doFert) {
+    html += `<div class="section-header">🌿 Fertilize Today
+      <span class="section-count">First Monday of ${monday.toLocaleString('en-US',{month:'long'})}</span></div>`;
+    fertPlants.forEach(p => {
+      const isDone = getFertChecked(mondayStr, p.id);
+      html += `<div class="plant-card${isDone ? ' done' : ''}" onclick="toggleFert(${p.id}, '${mondayStr}')">
+        <div class="plant-checkbox">${isDone ? '✓' : ''}</div>
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-note">${getFertNote(p, fertMonth)}</div>
+        </div>
+        <div class="card-right"><div class="card-num">#${p.id}</div></div>
+      </div>`;
+    });
+  } else if (FERT_MONTHS.includes(fertMonth)) {
+    html += `<div class="section-header">🌿 Fertilizing</div>
+      <div class="tier2-notice">Fertilizing happens on the <strong>first Monday of each month</strong> (May–September). Next fertilize day: <strong>${formatDateShort(getNextFertMonday(monday))}</strong></div>`;
+  }
+
+  // Other tasks
+  html += `<div class="section-header">📋 Ongoing Tasks</div>
+  <div class="other-tasks">
+    <div class="task-item"><span class="task-icon">🌺</span><span><strong>Bromeliad (#10) — mid-week:</strong> Check the central cup and top up with distilled water if low. Change if water looks stale. Takes 30 seconds.</span></div>
+    <div class="task-item"><span class="task-icon">🌵</span><span><strong>Haworthia B (#7):</strong> Gently tug pups — if they resist, roots are developing. When pups reach ⅓ parent size with roots, separate into their own shallow pot with succulent mix.</span></div>
+    <div class="task-item"><span class="task-icon">🌿</span><span><strong>Boston Fern (#1):</strong> Mist daily until humidifier is set up. Remove any newly dead fronds at the base as they appear.</span></div>
+    <div class="task-item"><span class="task-icon">🔬</span><span><strong>Rescue plants (#8, #9):</strong> Note any new growth each week. If #9 shows no progress after 4–6 more weeks, consider consulting a local nursery.</span></div>
+    <div class="task-item"><span class="task-icon">🚰</span><span><strong>Water prep:</strong> Keep a jug of tap water on the counter at all times — refill after each Monday so it's always had 24h+ to sit for chlorine-sensitive plants.</span></div>
+  </div>`;
+
+  document.getElementById('tab-monday').innerHTML = html;
+}
+
+function getNextFertMonday(fromMonday) {
+  let m = new Date(fromMonday); m.setDate(m.getDate() + 7);
+  while (!(FERT_MONTHS.includes(m.getMonth()) && isFirstMondayOfMonth(m))) m.setDate(m.getDate() + 7);
+  return m;
+}
+
+function toggleWater(id, mondayStr) {
+  toggleChecked(mondayStr, id);
+  renderMonday();
+}
+function toggleFert(id, mondayStr) {
+  toggleFertChecked(mondayStr, id);
+  renderMonday();
+}
+
+// ─── Render: All Plants tab ───────────────────────────────────────────────────
+function renderAll() {
+  let plants = [...PLANTS];
+
+  if (activeSortMode === 'urgency') {
+    const urgOrder = { overdue:0, check:1, unknown:2, fresh:3 };
+    plants.sort((a,b) => {
+      const da = getDaysSince(getLastWatered(a.id));
+      const db = getDaysSince(getLastWatered(b.id));
+      const ua = urgOrder[getUrgency(da, a.drought)];
+      const ub = urgOrder[getUrgency(db, b.drought)];
+      return ua - ub || (db||0) - (da||0);
+    });
+  } else {
+    plants.sort((a,b) => a.id - b.id);
+  }
+
+  let html = `<div class="sort-controls">
+    <span class="sort-label">Sort:</span>
+    <button class="sort-btn ${activeSortMode==='urgency'?'active':''}" onclick="setSort('urgency')">By Urgency</button>
+    <button class="sort-btn ${activeSortMode==='number'?'active':''}" onclick="setSort('number')">By Number</button>
+  </div>`;
+
+  html += `<div class="plants-grid">`;
+  plants.forEach(p => {
+    const lw = getLastWatered(p.id);
+    const days = getDaysSince(lw);
+    const urg = getUrgency(days, p.drought);
+    const tierCls = p.tier === 1 ? 'tier-1' : 'tier-2';
+    const today = toDateStr(new Date());
+    html += `<div class="plant-overview-card">
+      <div class="poc-header">
+        <div>
+          <div class="poc-name">${p.name}</div>
+          <div class="poc-sci">${p.sci}</div>
+        </div>
+        <span class="poc-num">#${p.id}</span>
+      </div>
+      <div class="poc-meta">
+        ${daysBadge(p.id)}
+        <div style="display:flex;gap:.3rem">
+          ${waterBadge(p.water)}
+          <span class="badge tier-badge ${tierCls}">Tier ${p.tier}</span>
+        </div>
+      </div>
+      <div class="poc-date-row">
+        <span>Last watered:</span>
+        <input type="date" value="${lw || ''}" max="${today}"
+          onchange="updateDate(${p.id}, this.value)"
+          onclick="event.stopPropagation()">
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="reset-row">
+    <button class="reset-btn" onclick="resetAll()">⚠ Reset all data</button>
+  </div>`;
+
+  document.getElementById('tab-all').innerHTML = html;
+}
+
+function updateDate(id, dateStr) {
+  setLastWatered(id, dateStr);
+  renderAll();
+  renderMonday();
+}
+
+function setSort(mode) {
+  activeSortMode = mode;
+  renderAll();
+}
+
+function resetAll() {
+  if (confirm('Reset all watered dates and check history? This cannot be undone.')) {
+    localStorage.removeItem(SK);
+    renderAll(); renderMonday();
+  }
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function showTab(name) {
+  currentTab = name;
+  document.getElementById('tab-monday').style.display = name === 'monday' ? '' : 'none';
+  document.getElementById('tab-all').style.display = name === 'all' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (name === 'all') renderAll();
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+function renderHeader() {
+  const today = new Date();
+  const monday = getNextMonday();
+  const isMonday = isToday(monday);
+  const daysAway = daysUntil(monday);
+
+  document.getElementById('header-today').textContent =
+    today.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+
+  document.getElementById('header-monday').textContent =
+    isMonday
+      ? '✅ Today is Monday!'
+      : `Next Monday: ${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} (${daysAway}d)`;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderHeader();
+renderMonday();
+</script>
+</body>
+</html>
